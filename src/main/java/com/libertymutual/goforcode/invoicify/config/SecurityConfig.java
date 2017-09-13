@@ -4,21 +4,27 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import com.libertymutual.goforcode.invoicify.services.InvoicifyUserDetailsService;
 
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter{
+	
+	private InvoicifyUserDetailsService userDetailsService;
+	
+	public SecurityConfig(InvoicifyUserDetailsService userDetailsService) {
+		this.userDetailsService = userDetailsService;
+	}
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
-//		.csrf().disable()
 		
 		.authorizeRequests()
-				.antMatchers("/", "/login", "/css/**", "/js/**").permitAll()
+				.antMatchers("/", "/login", "/signup", "/css/**", "/js/**").permitAll()
 				.antMatchers("/admin/**").hasRole("ADMIN")
 				.antMatchers("/invoices/**").hasAnyRole("ADMIN", "ACCOUNTANT")
 				.antMatchers("/billing-records/**").hasAnyRole("ADMIN", "CLERK")
@@ -26,44 +32,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
 				.anyRequest().authenticated()
 			.and()
 			.formLogin();
-		
 
 	}
 	
-	@Bean
+	
+	@Override
 	public UserDetailsService userDetailsService() {
-		InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+		//this is an interface
 		
-		//Build admin user
-		UserDetails user = User
-				.withUsername("admin")
-				.password("admin")
-				.roles("ADMIN")
-				.build();
+		return userDetailsService;
 		
-		manager.createUser(user);
-		
-		//Build clerk user		
-		user = User
-				.withUsername("clerk")
-				.password("clerk")
-				.roles("CLERK")
-				.build();
-		
-		manager.createUser(user);
-		
-		
-		//Build accountant user
-		user = User
-				.withUsername("accountant")
-				.password("accountant")
-				.roles("ACCOUNTANT")
-				.build();
-		
-		manager.createUser(user);
-		
-		return manager;	
-		
+	}
+	
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
 	}
 	
 	
